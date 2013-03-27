@@ -3,7 +3,7 @@ var margin = {top: 20, right: 20, bottom: 30, left: 50},
     height = 500 - margin.top - margin.bottom;
 
 function timeSeriesChart() {
-  var getX, getY
+  var time, value, label;
 
   var x = d3.time.scale()
       .range([0, width]);
@@ -20,13 +20,13 @@ function timeSeriesChart() {
       .orient("left");
 
   var line = d3.svg.line()
-      .x(function(d) { return x(getX(d)); })
-      .y(function(d) { return y(getY(d)); });
+      .x(function(d) { return x(time(d)); })
+      .y(function(d) { return y(value(d)); });
 
   function chart(selection) {
     selection.each(function(d, i) {
-      x.domain(d3.extent(d, function(d) { return getX(d); }));
-      y.domain(d3.extent(d, function(d) { return getY(d); }));
+      x.domain(d3.extent(d, function(d) { return time(d); }));
+      y.domain(d3.extent(d, function(d) { return value(d); }));
 
       var svg = selection.append('svg')
           .attr("width", width + margin.left + margin.right)
@@ -47,7 +47,7 @@ function timeSeriesChart() {
           .attr("y", 6)
           .attr("dy", ".71em")
           .style("text-anchor", "end")
-          .text("Price (Euro)");
+          .text(label);
 
       svg.append("path")
           .datum(d)
@@ -56,13 +56,18 @@ function timeSeriesChart() {
     });
   };
 
-  chart.x  = function(callback) {
-    getX = callback;
+  chart.time  = function(callback) {
+    time = callback;
     return chart;
   }
 
-  chart.y  = function(callback) {
-    getY = callback;
+  chart.value  = function(callback) {
+    value = callback;
+    return chart;
+  }
+
+  chart.label = function(text) {
+    label = text;
     return chart;
   }
 
@@ -73,8 +78,9 @@ if (Meteor.isClient) {
   Template.chart.rendered = function () {
     d3.json('trades.json', function(trades) {
       var chart = timeSeriesChart()
-        .x(function(d) { return parseInt(d.date); })
-        .y(function(d) { return parseFloat(d.price); });
+        .time(function(d) { return new Date(d.date * 1000); })
+        .value(function(d) { return parseFloat(d.price); })
+        .label('Euros');
 
       d3.select(".chart-wrapper")
         .datum(trades)
