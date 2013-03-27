@@ -9,14 +9,33 @@ if (Meteor.isClient) {
       values: []
     }];
 
+    var value = 0;
+    var dayQuantity = [new Date(0), 0];
+    var dayPrice = [new Date(0), 0];
     trades.forEach(function(trade) {
-      data[0].values.push([new Date(trade.date * 1000), parseFloat(trade.amount)])
-      data[1].values.push([new Date(trade.date * 1000), parseFloat(trade.price)])
+      // calculate the average daily price and total daily volume
+      var date = new Date(trade.date * 1000);
+      var day = new Date(0);
+      day.setUTCFullYear(date.getUTCFullYear());
+      day.setUTCMonth(date.getUTCMonth());
+      day.setUTCDate(date.getUTCDate());
+
+      if (day === dayVolume[0]) {
+        dayQuantity[1] += trade.amount;
+        value += (trade.amount * trade.price);
+        dayPrice[1] = value / dayQuantity[1];
+      } else {
+        value = (trade.amount * trade.price);
+        dayQuantity = [day, parseFloat(trade.amount)];
+        dayPrice = [day, parseFloat(trade.price)];
+        data[0].values.push(dayQuantity)
+        data[1].values.push(dayPrice)
+      }      
     });
 
     return data;
   }
-  
+
   Template.chart.rendered = function () {
     d3.json('trades.json', function(trades) {
       var data  = transformTrades(trades);
